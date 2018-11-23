@@ -86,7 +86,7 @@ def process_income_csv(income_csv):
     #z = df2.withColumn('StateCut', functions.lower(df2['State'][1:3]))
     udf = functions.UserDefinedFunction(lambda x: replace.get(x), types.StringType()) #---- Changed after speaking
     out = df2.withColumn("StateCut", udf(df2["State"])) #changed after speaking
-    fil_df=out.filter(out['State']==['alabama','pennsylvania','nevada','north carolina','ohio','illinois'])
+    fil_df=out.filter(out['State'].asin([*replace])) # Will filter the states need to check
     combine=fil_df.withColumn('incomeCombine',functions.concat(fil_df.StateCut,fil_df.County)).select('incomeCombine','income')
     return combine
 
