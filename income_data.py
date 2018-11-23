@@ -3,7 +3,8 @@ import pyspark
 from cassandra import ConsistencyLevel
 from cassandra.cluster import Cluster, Session
 from cassandra.query import BatchStatement
-from pyspark.sql import SparkSession,functions
+from pyspark.sql import SparkSession,functions,types
+from pyspark.sql.functions import UserDefinedFunction
 assert sys.version_info >= (3, 5)  # make sure we have Python 3.5+
 
 spark = SparkSession.builder.appName('CleanIncomeDataset').getOrCreate()
@@ -12,7 +13,6 @@ assert spark.version >= '2.3'  # make sure we have Spark 2.3+
 
 #IMP**
 replace = {'arizona': 'az', 'pennsylvania': 'pa', 'nevada': 'nv', 'north carolina': 'nc',
-           # the conversion part Important***??
            'ohio': 'oh', 'illinois': 'il'}
 
 key_space = 'hdasika'
@@ -76,18 +76,18 @@ def process_income_csv(income_csv):
     #_df = income.select(income['GEO.display-label'],income['HC01_EST_VC02'],income['HC01_MOE_VC02'],income['HC02_EST_VC02']).repartition(100)
     income = spark.read.csv(income_csv)
     x = income.select(income['_c2'].alias('label'),income['_c5'].alias('income'))
-    y=x.filter(x.label!='GEO.display-label')
+    y=x.filter(x.label!='GEO.display-label') #alternative for removing
     split_col = pyspark.sql.functions.split(y['label'], ',')
-    df=y.withColumn('County1', split_col.getItem(0))
-    df1 = df.withColumn('State', split_col.getItem(1))
+    df=y.withColumn('County1', functions.lower(split_col.getItem(0)))
+    df1 = df.withColumn('State', functions.lower(split_col.getItem(1)))
     split_col1 = pyspark.sql.functions.split(y['County1'], ' ')
     df2 = df1.withColumn('County', functions.lower(split_col.getItem(0))).drop('label').drop('County1')
-    split_col2 = pyspark.sql.functions.split(df2['State'], '')
-    z = df2.withColumn('StateCut', functions.lower(df2['State'][1:3]))
-    #u=combine.withColumn('address', functions.regexp_replace('address', replace))
-    #fil_df=df2.filter(df2['State']==['Alabama','Arizona'])
-    combine=z.withColumn('incomeCombine',functions.concat(z.StateCut,functions.lower(z.County)))
-    combine.select('incomeCombine','income')
+    #split_col2 = pyspark.sql.functions.split(df2['State'], '')
+    #z = df2.withColumn('StateCut', functions.lower(df2['State'][1:3]))
+    udf = functions.UserDefinedFunction(lambda x: replace.get(x), types.StringType()) #---- Changed after speaking
+    out = df2.withColumn("StateCut", udf(df2["State"])) #changed after speaking
+    fil_df=out.filter(out['State']==['alabama','pennsylvania','nevada','north carolina','ohio','illinois'])
+    combine=fil_df.withColumn('incomeCombine',functions.concat(fil_df.StateCut,fil_df.County)).select('incomeCombine','income')
     return combine
 
 
