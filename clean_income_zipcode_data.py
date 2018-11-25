@@ -96,7 +96,7 @@ def merge_income_and_zip_code_data(income_df_arg: DataFrame, zip_code_states_df_
     return merged_income_and_zip_code_df
 
 
-def main(income_csv_arg, zip_code_state_csv_arg, merged_csv_path_arg):
+def main(income_csv_arg, zip_code_state_csv_arg):
     cluster = Cluster()
     session = cluster.connect(key_space)
     session.execute(query_create_income_table)
