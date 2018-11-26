@@ -65,14 +65,13 @@ def process_zip_code_state_csv(zip_code_state_csv_arg):
 def merge_income_and_zip_code_data(income_df_arg: DataFrame, zip_code_states_df_arg: DataFrame, session: Session):
     merged_income_and_zip_code_df = zip_code_states_df_arg.join(income_df_arg,
                                                                 zip_code_states_df_arg['combine'] ==
-                                                                income_df_arg['combine'], how='left') \
+                                                                income_df_arg['combine'], how='inner') \
         .select(zip_code_states_df_arg.zip_code,
                 zip_code_states_df_arg.state,
                 zip_code_states_df_arg.county,
                 zip_code_states_df_arg.combine,
                 income_df_arg.income)
     merged_income_and_zip_code_df.show()
-
     insert_user_statement = session.prepare(
         "INSERT INTO income (zip_code, state, county, combine, avg_income) "
         "VALUES (?, ?, ?, ?, ?)")
