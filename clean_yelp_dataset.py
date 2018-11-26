@@ -3,11 +3,17 @@ import sys
 from cassandra import ConsistencyLevel
 from cassandra.cluster import Cluster, Session
 from cassandra.query import BatchStatement
-from pyspark.sql import SparkSession, types, DataFrame
+from pyspark.sql import SparkSession, types, DataFrame, functions
 
 assert sys.version_info >= (3, 5)  # make sure we have Python 3.5+
 
-spark = SparkSession.builder.appName('CleanYelpDataset').getOrCreate()
+spark = SparkSession.builder \
+    .config("spark.executor.memory", "70g") \
+    .config("spark.driver.memory", "50g") \
+    .config("spark.memory.offHeap.enabled", True) \
+    .config("spark.memory.offHeap.size", "16g") \
+    .appName('CleanYelpDataset') \
+    .getOrCreate()
 spark.sparkContext.setLogLevel('WARN')
 assert spark.version >= '2.3'  # make sure we have Spark 2.3+
 
@@ -32,8 +38,16 @@ query_create_review_table = "CREATE TABLE IF NOT EXISTS review ( review_id TEXT 
                             "business_id TEXT, " \
                             "user_id TEXT, " \
                             "review TEXT, " \
-                            "r_stars TEXT, " \
+                            "r_stars INT, " \
                             "r_date DATE );"
+
+
+def get_price_range(attributes):
+    if attributes is not None and attributes['RestaurantsPriceRange2'] is not None:
+        price_range = int(attributes['RestaurantsPriceRange2'])
+    else:
+        price_range = 0
+    return price_range
 
 
 # Read and store business JSON file using the schema
@@ -56,11 +70,15 @@ def process_business_json(input_json_business, session: Session):
     ])
     # Read business JSON file using the schema
     business_df = spark.read.json(input_json_business, schema=business_schema)
+
+    price_range_udf = functions.UserDefinedFunction(lambda attributes: get_price_range(attributes), types.IntegerType())
     # Filter all the businesses which are still open in the business_states
     business_df = business_df.filter((business_df['is_open'] == 1) &
-                                     business_df['state'].isin(business_states)).repartition(100)
+                                     business_df['state'].isin(business_states)) \
+        .withColumn('pricerange', price_range_udf(business_df['attributes'])) \
+        .repartition(100)
 
-    insert_user_statement = session.prepare(
+    insert_business_statement = session.prepare(
         "INSERT INTO business (b_id, city, state, review_count, categories, "
         "postal_code, latitude, longitude, pricerange, b_stars) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
@@ -68,22 +86,16 @@ def process_business_json(input_json_business, session: Session):
 
     bath_size = 0
     for row in business_df.rdd.collect():
-
-        # print(row['attributes']['RestaurantsPriceRange2'])
-        if row['attributes'] is not None and row['attributes']['RestaurantsPriceRange2'] is not None:
-            price_range = int(row['attributes']['RestaurantsPriceRange2'])
-        else:
-            price_range = 0
-        batch.add(insert_user_statement, (row['business_id'],
-                                          row['city'],
-                                          row['state'],
-                                          row['review_count'],
-                                          row['categories'],
-                                          row['postal_code'],
-                                          row['latitude'],
-                                          row['longitude'],
-                                          price_range,
-                                          row['stars'])
+        batch.add(insert_business_statement, (row['business_id'],
+                                              row['city'],
+                                              row['state'],
+                                              row['review_count'],
+                                              row['categories'],
+                                              row['postal_code'],
+                                              row['latitude'],
+                                              row['longitude'],
+                                              row['pricerange'],
+                                              row['stars'])
                   )
         bath_size += 1
 
@@ -101,12 +113,19 @@ def process_review_json(input_json_review, business_df: DataFrame, session: Sess
         types.StructField('review_id', types.StringType(), True),
         types.StructField('business_id', types.StringType(), True),
         types.StructField('user_id', types.StringType(), True),
-        types.StructField('stars', types.IntegerType(), True),
         types.StructField('text', types.StringType(), True),
+        types.StructField('stars', types.IntegerType(), True),
         types.StructField('date', types.DateType(), True)
     ])
-    review_df = spark.read.json(input_json_review, schema=review_schema)
-    review_df = review_df.join(business_df, business_df['business_id'] == review_df['business_id']).repartition(100)
+    reviews_df = spark.read.json(input_json_review, schema=review_schema)
+    review_df = reviews_df.join(business_df, business_df['business_id'] == reviews_df['business_id']) \
+        .select(reviews_df.review_id,
+                reviews_df.business_id,
+                reviews_df.user_id,
+                reviews_df.text,
+                reviews_df.stars,
+                reviews_df.date) \
+        .repartition(100)
 
     insert_user_statement = session.prepare(
         "INSERT INTO review (review_id, business_id, user_id, review, r_stars, r_date) "
