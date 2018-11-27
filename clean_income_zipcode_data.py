@@ -1,18 +1,20 @@
 import sys
 
 import pyspark
-from cassandra import ConsistencyLevel
 from cassandra.cluster import Cluster, Session
-from cassandra.query import BatchStatement
 from pyspark.sql import SparkSession, functions, types, DataFrame
 
 assert sys.version_info >= (3, 5)  # make sure we have Python 3.5+
 
-spark = SparkSession.builder.appName('CleanIncomeDataset').getOrCreate()
+cluster_seeds = ['199.60.17.188', '199.60.17.216']
+spark = SparkSession.builder \
+    .config('spark.cassandra.connection.host', ','.join(cluster_seeds)) \
+    .appName('CleanIncomeDataset') \
+    .getOrCreate()
 spark.sparkContext.setLogLevel('WARN')
 assert spark.version >= '2.3'  # make sure we have Spark 2.3+
 
-required_states_abbr = ['az', 'pa', 'nv', 'nc', 'oh', 'il']
+required_states_abbr = ['pa', 'nv', 'nc', 'il', 'oh', 'az']
 states_abbr_mapping = {'arizona': 'az',
                        'pennsylvania': 'pa',
                        'nevada': 'nv',
@@ -20,12 +22,14 @@ states_abbr_mapping = {'arizona': 'az',
                        'ohio': 'oh',
                        'illinois': 'il'}
 
-key_space = 'bigp18'
-query_create_income_table = "CREATE TABLE IF NOT EXISTS income ( zip_code TEXT PRIMARY KEY, " \
-                            "state TEXT, " \
-                            "county TEXT, " \
-                            "combine TEXT, " \
-                            "avg_income INT );"
+KEY_SPACE = 'bigp18'
+TABLE_INCOME = 'income'
+
+query_create_income_table = "CREATE TABLE IF NOT EXISTS " + TABLE_INCOME + " ( zip_code TEXT PRIMARY KEY, " \
+                                                                           "state TEXT, " \
+                                                                           "county TEXT, " \
+                                                                           "combine TEXT, " \
+                                                                           "avg_income INT );"
 
 
 def process_income_csv(income_csv_arg):
@@ -62,7 +66,7 @@ def process_zip_code_state_csv(zip_code_state_csv_arg):
     return zip_code_states_df
 
 
-def merge_income_and_zip_code_data(income_df_arg: DataFrame, zip_code_states_df_arg: DataFrame, session: Session):
+def merge_income_and_zip_code_data(income_df_arg, zip_code_states_df_arg):
     merged_income_and_zip_code_df = zip_code_states_df_arg.join(income_df_arg,
                                                                 zip_code_states_df_arg['combine'] ==
                                                                 income_df_arg['combine'], how='inner') \
@@ -70,34 +74,16 @@ def merge_income_and_zip_code_data(income_df_arg: DataFrame, zip_code_states_df_
                 zip_code_states_df_arg.state,
                 zip_code_states_df_arg.county,
                 zip_code_states_df_arg.combine,
-                income_df_arg.income)
-    merged_income_and_zip_code_df.show()
-    insert_user_statement = session.prepare(
-        "INSERT INTO income (zip_code, state, county, combine, avg_income) "
-        "VALUES (?, ?, ?, ?, ?)")
-    batch = BatchStatement(consistency_level=ConsistencyLevel.ONE)
+                income_df_arg.income.alias('avg_income'))
 
-    bath_size = 0
-    for row in merged_income_and_zip_code_df.rdd.collect():
-        batch.add(insert_user_statement, (row['zip_code'],
-                                          row['state'],
-                                          row['county'],
-                                          row['combine'],
-                                          row['income'])
-                  )
-        bath_size += 1
-        if bath_size >= 100:
-            session.execute(batch)
-            bath_size = 0
-            batch.clear()
-    session.execute(batch)
-
-    return merged_income_and_zip_code_df
+    merged_income_and_zip_code_df.write.format("org.apache.spark.sql.cassandra") \
+        .options(table=TABLE_INCOME, keyspace=KEY_SPACE) \
+        .save(mode='append')
 
 
 def main(income_csv_arg, zip_code_state_csv_arg):
-    cluster = Cluster()
-    session = cluster.connect(key_space)
+    cluster = Cluster(cluster_seeds)
+    session = cluster.connect(KEY_SPACE)
     session.execute(query_create_income_table)
 
     income_df = process_income_csv(income_csv_arg)
