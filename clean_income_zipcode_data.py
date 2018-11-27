@@ -25,7 +25,10 @@ states_abbr_mapping = {'arizona': 'az',
 KEY_SPACE = 'bigp18'
 TABLE_INCOME = 'income'
 
-query_create_income_table = "CREATE TABLE IF NOT EXISTS " + TABLE_INCOME + " ( zip_code TEXT PRIMARY KEY, " \
+QUERY_CREATE_KEY_SPACE = "CREATE KEYSPACE IF NOT EXISTS " + KEY_SPACE + \
+                         " WITH replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 3 };"
+
+QUERY_CREATE_INCOME_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_INCOME + " ( zip_code TEXT PRIMARY KEY, " \
                                                                            "state TEXT, " \
                                                                            "county TEXT, " \
                                                                            "combine TEXT, " \
@@ -83,13 +86,16 @@ def merge_income_and_zip_code_data(income_df_arg, zip_code_states_df_arg):
 
 def main(income_csv_arg, zip_code_state_csv_arg):
     cluster = Cluster(cluster_seeds)
-    session = cluster.connect(KEY_SPACE)
-    session.execute(query_create_income_table)
+    session = cluster.connect()
+
+    session.execute(QUERY_CREATE_KEY_SPACE)
+    session.set_keyspace(KEY_SPACE)
+    session.execute(QUERY_CREATE_INCOME_TABLE)
 
     income_df = process_income_csv(income_csv_arg)
     zip_code_state_df = process_zip_code_state_csv(zip_code_state_csv_arg)
 
-    merge_income_and_zip_code_data(income_df, zip_code_state_df, session)
+    merge_income_and_zip_code_data(income_df, zip_code_state_df)
 
 
 if __name__ == '__main__':

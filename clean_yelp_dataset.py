@@ -20,7 +20,10 @@ TABLE_BUSINESS = 'business'
 TABLE_USER = 'user'
 TABLE_REVIEW = 'review'
 
-query_create_business_table = "CREATE TABLE IF NOT EXISTS " + TABLE_BUSINESS + " ( b_id TEXT PRIMARY KEY, " \
+QUERY_CREATE_KEY_SPACE = "CREATE KEYSPACE IF NOT EXISTS " + KEY_SPACE + \
+                         " WITH replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 3 };"
+
+QUERY_CREATE_BUSINESS_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_BUSINESS + " ( b_id TEXT PRIMARY KEY, " \
                                                                                "city TEXT, " \
                                                                                "state TEXT, " \
                                                                                "review_count INT, " \
@@ -30,11 +33,11 @@ query_create_business_table = "CREATE TABLE IF NOT EXISTS " + TABLE_BUSINESS + "
                                                                                "longitude DOUBLE, " \
                                                                                "pricerange INT, " \
                                                                                "b_stars FLOAT );"
-query_create_user_table = "CREATE TABLE IF NOT EXISTS " + TABLE_USER + " ( user_id TEXT PRIMARY KEY, " \
-                                                                        "review_count INT, " \
-                                                                        "yelping_since DATE, " \
-                                                                        "average_stars FLOAT );"
-query_create_review_table = "CREATE TABLE IF NOT EXISTS " + TABLE_REVIEW + " ( review_id TEXT PRIMARY KEY, " \
+QUERY_CREATE_USER_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_USER + " ( user_id TEXT PRIMARY KEY, " \
+                                                                       "review_count INT, " \
+                                                                       "yelping_since DATE, " \
+                                                                       "average_stars FLOAT );"
+QUERY_CREATE_REVIEW_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_REVIEW + " ( review_id TEXT PRIMARY KEY, " \
                                                                            "business_id TEXT, " \
                                                                            "user_id TEXT, " \
                                                                            "review TEXT, " \
@@ -131,11 +134,14 @@ def process_user_json(input_json_user):
 
 def main(businesses_json_file_path_arg, review_json_file_path_arg, user_json_file_path_arg):
     cluster = Cluster(cluster_seeds)
-    session = cluster.connect(KEY_SPACE)
+    session = cluster.connect()
 
-    session.execute(query_create_business_table)
-    session.execute(query_create_review_table)
-    session.execute(query_create_user_table)
+    session.execute(QUERY_CREATE_KEY_SPACE)
+    session.set_keyspace(KEY_SPACE)
+
+    session.execute(QUERY_CREATE_BUSINESS_TABLE)
+    session.execute(QUERY_CREATE_REVIEW_TABLE)
+    session.execute(QUERY_CREATE_USER_TABLE)
 
     business_df = process_business_json(businesses_json_file_path_arg)
     process_review_json(review_json_file_path_arg, business_df)
