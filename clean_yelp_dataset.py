@@ -228,7 +228,7 @@ def main(businesses_json_file_path_arg,
 
 # Input will be the path of the business, review and user JSON file
 if __name__ == '__main__':
-    if len(sys.argv) <= 0:
+    if len(sys.argv) <= 1:
         income_csv_path = '/user/nmisra/yelp/income.csv'
         zip_code_state_csv_path = '/user/nmisra/yelp/zip_codes_states.csv'
         businesses_json_file_path = '/user/nmisra/yelp/business.json'
@@ -240,7 +240,7 @@ if __name__ == '__main__':
              user_json_file_path,
              income_csv_path,
              zip_code_state_csv_path)
-    elif len(sys.argv) == 5:
+    elif len(sys.argv) == 6:
         income_csv_path = sys.argv[1]
         zip_code_state_csv_path = sys.argv[2]
         businesses_json_file_path = sys.argv[3]
