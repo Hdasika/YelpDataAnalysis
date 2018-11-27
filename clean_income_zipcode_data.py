@@ -6,7 +6,7 @@ from pyspark.sql import SparkSession, functions, types, DataFrame
 
 assert sys.version_info >= (3, 5)  # make sure we have Python 3.5+
 
-cluster_seeds = ['199.60.17.188', '199.60.17.216']
+cluster_seeds = ['199.60.17.188', '199.60.17.216', '127.0.0.1']
 spark = SparkSession.builder \
     .config('spark.cassandra.connection.host', ','.join(cluster_seeds)) \
     .appName('CleanIncomeDataset') \
@@ -37,7 +37,7 @@ QUERY_CREATE_INCOME_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_INCOME + " ( z
 
 def process_income_csv(income_csv_arg):
     income_df = spark.read.csv(income_csv_arg)
-    income_df = income_df.filter((income_df['_c2'] != 'GEO.display-label') | (income_df['_c2'] != 'Geography')) \
+    income_df = income_df.filter((income_df['_c2'] != 'GEO.display-label') & (income_df['_c2'] != 'Geography')) \
         .select(income_df['_c2'].alias('county_state'), income_df['_c7'].alias('income'))
 
     county_state_column = pyspark.sql.functions.split(income_df['county_state'], ',')
