@@ -34,8 +34,8 @@ query_create_income_table = "CREATE TABLE IF NOT EXISTS " + TABLE_INCOME + " ( z
 
 def process_income_csv(income_csv_arg):
     income_df = spark.read.csv(income_csv_arg)
-    income_df = income_df.filter(income_df['_c2'] != 'GEO.display-label') \
-        .select(income_df['_c2'].alias('county_state'), income_df['_c5'].alias('income'))
+    income_df = income_df.filter((income_df['_c2'] != 'GEO.display-label') | (income_df['_c2'] != 'Geography')) \
+        .select(income_df['_c2'].alias('county_state'), income_df['_c7'].alias('income'))
 
     county_state_column = pyspark.sql.functions.split(income_df['county_state'], ',')
     county_name = pyspark.sql.functions.split(county_state_column.getItem(0), ' ').getItem(0)
