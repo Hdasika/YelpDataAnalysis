@@ -228,14 +228,31 @@ def main(businesses_json_file_path_arg,
 
 # Input will be the path of the business, review and user JSON file
 if __name__ == '__main__':
-    income_csv_path = sys.argv[1]
-    zip_code_state_csv_path = sys.argv[2]
-    businesses_json_file_path = sys.argv[3]
-    review_json_file_path = sys.argv[4]
-    user_json_file_path = sys.argv[5]
+    if len(sys.argv) <= 0:
+        income_csv_path = '/user/nmisra/yelp/income.csv'
+        zip_code_state_csv_path = '/user/nmisra/yelp/zip_codes_states.csv'
+        businesses_json_file_path = '/user/nmisra/yelp/business.json'
+        review_json_file_path = '/user/nmisra/yelp/review.json'
+        user_json_file_path = '/user/nmisra/yelp/user.json'
 
-    main(businesses_json_file_path,
-         review_json_file_path,
-         user_json_file_path,
-         income_csv_path,
-         zip_code_state_csv_path)
+        main(businesses_json_file_path,
+             review_json_file_path,
+             user_json_file_path,
+             income_csv_path,
+             zip_code_state_csv_path)
+    elif len(sys.argv) == 5:
+        income_csv_path = sys.argv[1]
+        zip_code_state_csv_path = sys.argv[2]
+        businesses_json_file_path = sys.argv[3]
+        review_json_file_path = sys.argv[4]
+        user_json_file_path = sys.argv[5]
+
+        main(businesses_json_file_path,
+             review_json_file_path,
+             user_json_file_path,
+             income_csv_path,
+             zip_code_state_csv_path)
+    else:
+        print('Since you\'re trying to provide input arguments. Please provide in this order '
+              '{/user/nmisra/yelp/income.csv /user/nmisra/yelp/zip_codes_states.csv /user/nmisra/yelp/business.json '
+              '/user/nmisra/yelp/review.json /user/nmisra/yelp/user.json}')
