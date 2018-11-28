@@ -1,4 +1,4 @@
-# Following changes are required: 1. The dataset is too small, synthetic data is suggested but not a good practice. 2. I am getting evaluator score to be 100%, something is fishy 3. I want to try polling/voting method if time permits 4. A test file like weather-test in the assignment is pending.
+# Following changes are required: 1. The dataset is too small, synthetic data is suggested but not a good practice. 2. I am getting evaluator score to be 100%, something is fishy 3. I want to try polling/voting method if time permits 4. A  file like weather-tomorrow in the assignment is pending.
 import sys
 import re
 from datetime import date, datetime
