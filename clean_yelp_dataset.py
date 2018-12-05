@@ -16,13 +16,14 @@ assert spark.version >= '2.3'  # make sure we have Spark 2.3+
 
 business_states = ['PA', 'NV', 'NC', 'IL', 'OH', 'AZ', 'WI']
 required_states_abbr = ['pa', 'nv', 'nc', 'il', 'oh', 'az', 'wi']
-filter_categories = ['Restaurants', 'Restaurant']
+filter_categories = '%Restaurant%'
 states_abbr_mapping = {'arizona': 'az',
                        'pennsylvania': 'pa',
                        'nevada': 'nv',
                        'north carolina': 'nc',
                        'ohio': 'oh',
-                       'illinois': 'il'}
+                       'illinois': 'il'
+                       'wisconsin': 'wi'}
 
 KEY_SPACE = 'bigp18'
 TABLE_BUSINESS = 'business'
@@ -101,7 +102,7 @@ def process_business_json(input_json_business):
     # Filter all the businesses which are still open in the business_states
     business_df = business_df.filter((business_df['is_open'] == 1) &
                                      business_df['state'].isin(business_states) &
-                                     business_df['categories'].isin(filter_categories)) \
+                                     business_df['categories'].like(filter_categories)) \
         .withColumn('pricerange', price_range_udf(business_df['attributes'])) \
         .withColumnRenamed('business_id', 'b_id') \
         .withColumnRenamed('stars', 'b_stars') \
