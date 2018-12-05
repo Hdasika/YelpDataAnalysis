@@ -14,8 +14,9 @@ spark = SparkSession.builder \
 spark.sparkContext.setLogLevel('WARN')
 assert spark.version >= '2.3'  # make sure we have Spark 2.3+
 
-business_states = ['PA', 'NV', 'NC', 'IL', 'OH', 'AZ']
-required_states_abbr = ['pa', 'nv', 'nc', 'il', 'oh', 'az']
+business_states = ['PA', 'NV', 'NC', 'IL', 'OH', 'AZ', 'WI']
+required_states_abbr = ['pa', 'nv', 'nc', 'il', 'oh', 'az', 'wi']
+filter_categories = ['Restaurants', 'Restaurant']
 states_abbr_mapping = {'arizona': 'az',
                        'pennsylvania': 'pa',
                        'nevada': 'nv',
@@ -99,7 +100,8 @@ def process_business_json(input_json_business):
     price_range_udf = functions.UserDefinedFunction(lambda attributes: get_price_range(attributes), types.IntegerType())
     # Filter all the businesses which are still open in the business_states
     business_df = business_df.filter((business_df['is_open'] == 1) &
-                                     business_df['state'].isin(business_states)) \
+                                     business_df['state'].isin(business_states) &
+                                     business_df['categories'].isin(filter_categories)) \
         .withColumn('pricerange', price_range_udf(business_df['attributes'])) \
         .withColumnRenamed('business_id', 'b_id') \
         .withColumnRenamed('stars', 'b_stars') \
@@ -226,14 +228,17 @@ def main(businesses_json_file_path_arg,
     process_user_json(user_json_file_path_arg)
 
 
+ROOT_PATH = '/user/nmisra/yelp/'
+# ROOT_PATH = '/Users/Chhavi/bigdata/projects/YelpDataAnalysis/raw_data/'
+
 # Input will be the path of the business, review and user JSON file
 if __name__ == '__main__':
     if len(sys.argv) <= 1:
-        income_csv_path = '/user/nmisra/yelp/income.csv'
-        zip_code_state_csv_path = '/user/nmisra/yelp/zip_codes_states.csv'
-        businesses_json_file_path = '/user/nmisra/yelp/business.json'
-        review_json_file_path = '/user/nmisra/yelp/review.json'
-        user_json_file_path = '/user/nmisra/yelp/user.json'
+        income_csv_path = ROOT_PATH + 'income.csv'
+        zip_code_state_csv_path = ROOT_PATH + 'zip_codes_states.csv'
+        businesses_json_file_path = ROOT_PATH + 'business.json'
+        review_json_file_path = ROOT_PATH + 'review.json'
+        user_json_file_path = ROOT_PATH + 'user.json'
 
         main(businesses_json_file_path,
              review_json_file_path,
