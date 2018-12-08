@@ -35,6 +35,31 @@ Two parts are involved over here (involves joining income.csv and zip_code_state
  
 
 Part - 2 (Fake Review & Word Cloud)
+--------------------------------------------------------------
+final_nlp.py
+
+To run use spark-submit final_nlp.py model_file
+model_file is the path where the model will be saved
+The code will train the model to find out deceptive reviews.
+---------------------------------------------------------------
+final_review_predicted.py
+
+To run use spark-submit --packages datastax:spark-cassandra-connector:2.3.1-s_2.11 final_review_predicted.py
+please write the path for your model in the variable ROOT_PATH
+This file will run the trained model from the previous code saved in the path mentioned by the user.
+The code will classify the reviews to be deceptive and genuine.
+
+---------------------------------------------------------------
+final_word_cloud.py
+
+To run run the following commands
+pyspark --packages JohnSnowLabs:spark-nlp:1.7.3
+export SPARK_SUBMIT_OPTIONS="--packages JohnSnowLabs:spark-nlp:1.7.3"
+spark-submit --packages datastax:spark-cassandra-connector:2.3.1-s_2.11,JohnSnowLabs:spark-nlp:1.7.3 final_word_cloud.py
+The code will produce word cloud for a particlular business id
+use this as business id TkXmhC7ZDA5H2tebIXH2_Q
+
+
 --------
 Part - 3 (Web Frontend -- Visualization)
 --------
