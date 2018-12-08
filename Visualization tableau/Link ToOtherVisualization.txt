@@ -1,0 +1,11 @@
+The published visualization:
+https://public.tableau.com/profile/krishna.chaitanya.gopaluni2493#!/
+
+
+#rather than pushing the work books , link to the following 3 visualizations are given as they have large meta data
+
+https://public.tableau.com/profile/krishna.chaitanya.gopaluni2493#!/vizhome/RatingPatternsforaSuccessfulRestaurant/RatingPatternsforaSuccessfulRestaurant
+
+https://public.tableau.com/profile/krishna.chaitanya.gopaluni2493#!/vizhome/HighStarDeceptiveRatingsComparedtoLowstarNonFakeratings/HighStarDeceptiveRatingsComparedtoLowstarNonFakeratings
+
+https://public.tableau.com/profile/krishna.chaitanya.gopaluni2493#!/vizhome/RatingPatternsforaRestaurantwithNon-FakeReviews/RatingPatternsforaRestaurantwithNon-FakeReviews
