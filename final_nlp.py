@@ -53,10 +53,9 @@ def main(model_file):
 
     metadata_text_file = spark.sparkContext.textFile('metadata')
     metadata = spark.createDataFrame(metadata_text_file.flatMap(construct_metadata_rdd), schema=metadata_schema)
-    # metadata.show(10)
+
     review_content_text_file = spark.sparkContext.textFile('reviewcontent')
     reviewcontent = spark.createDataFrame(review_content_text_file.flatMap(construct_review_rdd), schema=review_schema)
-    # reviewcontent.show(10)
 
     cond = [reviewcontent.date == metadata.date, reviewcontent.user_id_1 == metadata.user_id_2]
     combine = reviewcontent.join(metadata, cond)
@@ -76,16 +75,12 @@ def main(model_file):
     tokenizer = Tokenizer(inputCol="review", outputCol="words")
     hashtf = HashingTF(numFeatures=2 ** 16, inputCol="words", outputCol='tf')
     idf = IDF(inputCol='tf', outputCol="features", minDocFreq=5)
-    
-    
 
-    
     pipeline = Pipeline(stages=[tokenizer, hashtf, idf])
-    
 
     pipelineFit = pipeline.fit(train_set)
     train_df = pipelineFit.transform(train_set)
-    
+
     test_df = pipelineFit.transform(test_set)
     test_df_feed = test_df.drop("label")
     train_df.show(5)
@@ -95,7 +90,6 @@ def main(model_file):
     predictions = lrModel.transform(test_df_feed)
     predictions.show(10)
 
-    
     lrModel.write().overwrite().save(model_file)
 
 
