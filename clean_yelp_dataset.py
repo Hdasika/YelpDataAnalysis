@@ -1,10 +1,10 @@
 import sys
 
+assert sys.version_info >= (3, 5)  # make sure we have Python 3.5+
+
 import pyspark
 from cassandra.cluster import Cluster
 from pyspark.sql import SparkSession, types, functions
-
-assert sys.version_info >= (3, 5)  # make sure we have Python 3.5+
 
 cluster_seeds = ['199.60.17.188', '199.60.17.216', '127.0.0.1']
 spark = SparkSession.builder \
@@ -22,7 +22,7 @@ states_abbr_mapping = {'arizona': 'az',
                        'nevada': 'nv',
                        'north carolina': 'nc',
                        'ohio': 'oh',
-                       'illinois': 'il'
+                       'illinois': 'il',
                        'wisconsin': 'wi'}
 
 KEY_SPACE = 'bigp18'
@@ -32,7 +32,7 @@ TABLE_REVIEW = 'review'
 TABLE_INCOME = 'income'
 
 QUERY_CREATE_KEY_SPACE = "CREATE KEYSPACE IF NOT EXISTS " + KEY_SPACE + \
-                         " WITH replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 3 };"
+                         " WITH replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };"
 
 QUERY_CREATE_BUSINESS_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_BUSINESS + " ( b_id TEXT PRIMARY KEY, " \
                                                                                "name TEXT, " \
@@ -56,6 +56,7 @@ QUERY_CREATE_REVIEW_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_REVIEW + " ( r
                                                                            "review TEXT, " \
                                                                            "r_stars INT, " \
                                                                            "r_date DATE );"
+
 QUERY_CREATE_INCOME_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_INCOME + " ( zip_code TEXT PRIMARY KEY, " \
                                                                            "state TEXT, " \
                                                                            "county TEXT, " \
@@ -230,7 +231,6 @@ def main(businesses_json_file_path_arg,
 
 
 ROOT_PATH = '/user/nmisra/yelp/'
-# ROOT_PATH = '/Users/Chhavi/bigdata/projects/YelpDataAnalysis/raw_data/'
 
 # Input will be the path of the business, review and user JSON file
 if __name__ == '__main__':
